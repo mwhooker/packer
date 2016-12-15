@@ -1,9 +1,5 @@
 version: 0.1
 
-environment_variables:
-  plaintext:
-    GOPATH: "$CODEBUILD_SRC_DIR"
-
 phases:
   install:
     commands:
