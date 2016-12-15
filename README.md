@@ -1,3 +1,4 @@
+test
 # Packer
 
 [![Build Status](https://travis-ci.org/mitchellh/packer.svg?branch=master)](https://travis-ci.org/mitchellh/packer)
