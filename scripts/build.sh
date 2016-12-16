@@ -12,8 +12,10 @@ DIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 cd $DIR
 
 # Get the git commit
-GIT_COMMIT=$(git rev-parse HEAD)
-GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+#GIT_COMMIT=$(git rev-parse HEAD)
+#GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
+#GIT_VERSION=${GIT_COMMIT}${GIT_DIRTY}
+GIT_VERSION="codebuild"
 
 # If its dev mode, only build for ourself
 if [ "${PACKER_DEV}x" != "x" ]; then
@@ -37,7 +39,7 @@ set +e
 gox \
     -os="${XC_OS}" \
     -arch="${XC_ARCH}" \
-    -ldflags "-X github.com/mitchellh/packer/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY}" \
+    -ldflags "-X github.com/mitchellh/packer/version.GitCommit=${GIT_VERSION}" \
     -output "pkg/{{.OS}}_{{.Arch}}/packer" \
     .
 set -e
