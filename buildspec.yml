@@ -4,14 +4,19 @@ phases:
   install:
     commands:
       - apt-get update -y
+  pre_build:
+      commands:
+          - mkdir -p $GOPATH/src/github.com/mitchellh
+          - mv $CODEBUILD_SRC_DIR $GOPATH/src/github.com/mitchellh/packer
   build:
     commands:
       - echo Build started on `date`
+      - cd $GOPATH/src/github.com/mitchellh/packer
       - make bin
   post_build:
     commands:
       - echo Build completed on `date`
 artifacts:
   files:
-    - pkg/*
+    - $GOPATH/src/github.com/mitchellh/packer/pkg/*
   discard-paths: yes
