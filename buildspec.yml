@@ -13,7 +13,7 @@ phases:
   pre_build:
       commands:
           - mkdir -p $PACKER_DIR
-          - mv $CODEBUILD_SRC_DIR $PACKER_DIR
+          - cp -R $CODEBUILD_SRC_DIR $PACKER_DIR
   build:
     commands:
       - echo Build started on `date`
