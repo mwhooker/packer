@@ -4,7 +4,6 @@ environment_variables:
     plaintext:
         XC_ARCH: "386 amd64"
         XC_OS: "linux darwin windows freebsd openbsd"
-        PACKER_DIR: "$GOPATH/src/github.com/mitchellh/packer"
 phases:
   install:
     commands:
@@ -12,17 +11,17 @@ phases:
       - env
   pre_build:
       commands:
-          - mkdir -p $PACKER_DIR
-          - cp -R $CODEBUILD_SRC_DIR $PACKER_DIR
+          - mkdir -p $GOPATH/src/github.com/mitchellh/packer
+          - mv $CODEBUILD_SRC_DIR $GOPATH/src/github.com/mitchellh/packer
   build:
     commands:
       - echo Build started on `date`
-      - cd $PACKER_DIR
+      - cd $GOPATH/src/github.com/mitchellh/packer
       - make bin
   post_build:
     commands:
       - echo Build completed on `date`
 artifacts:
   files:
-    - $PACKER_DIR/pkg/*
+    - $GOPATH/src/github.com/mitchellh/packer/pkg/*
   discard-paths: yes
