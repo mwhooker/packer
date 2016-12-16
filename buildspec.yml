@@ -9,6 +9,7 @@ phases:
   install:
     commands:
       - apt-get update -y
+      - env
   pre_build:
       commands:
           - mkdir -p $PACKER_DIR
