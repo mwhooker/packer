@@ -21,6 +21,7 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
+      - ls -R
 artifacts:
   files:
     - $GOPATH/src/github.com/mitchellh/packer/pkg/*
