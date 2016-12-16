@@ -14,7 +14,7 @@ release: deps test releasebin package ## Build a release build
 
 bin: deps ## Build debug/test build
 	@echo "WARN: 'make bin' is for debug / test builds only. Use 'make release' for release builds."
-	@GO15VENDOREXPERIMENT=1 sh -c "$(CURDIR)/scripts/build.sh"
+	bash "$(CURDIR)/scripts/build.sh"
 
 releasebin: deps
 	@grep 'const VersionPrerelease = "dev"' version/version.go > /dev/null ; if [ $$? -eq 0 ]; then \
