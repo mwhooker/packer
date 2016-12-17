@@ -25,5 +25,5 @@ phases:
       - ls -R $GOPATH/src/github.com/mitchellh/packer/pkg/
 artifacts:
   files:
-    - pkg/*
+    - $GOPATH/src/github.com/mitchellh/packer/pkg/**/*
   discard-paths: no
