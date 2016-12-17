@@ -21,9 +21,8 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
-      - ls -R ./pkg
-      - ls -R $GOPATH/src/github.com/mitchellh/packer/pkg/
+      - cp -R $GOPATH/src/github.com/mitchellh/packer/pkg/ $CODEBUILD_SRC_DIR/
 artifacts:
   files:
-    - "/go/src/github.com/mitchellh/packer/pkg/**/*"
-  discard-paths: no
+      - pkg/
+  discard-paths: yes
