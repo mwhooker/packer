@@ -24,5 +24,5 @@ phases:
       - cp -R $GOPATH/src/github.com/mitchellh/packer/pkg/ $CODEBUILD_SRC_DIR/
 artifacts:
   files:
-      - pkg/
-  discard-paths: yes
+      - pkg/**/*
+  discard-paths: no
