@@ -2,8 +2,8 @@ version: 0.1
 
 environment_variables:
     plaintext:
-        XC_ARCH: "386 amd64"
-        XC_OS: "linux darwin windows freebsd openbsd"
+        XC_ARCH: "amd64"
+        XC_OS: "linux"
 phases:
   install:
     commands:
