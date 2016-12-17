@@ -21,9 +21,8 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
-      - mv $GOPATH/src/github.com/mitchellh/packer/pkg $CODEBUILD_SRC_DIR
-      - cd $CODEBUILD_SRC_DIR
+      - mv $GOPATH/src/github.com/mitchellh/packer/pkg $CODEBUILD_SRC_DIR/snapshot
 artifacts:
   files:
-      - "**/*"
+      - snapshot/**/*
   discard-paths: no
