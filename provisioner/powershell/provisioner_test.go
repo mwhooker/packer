@@ -75,12 +75,12 @@ func TestProvisionerPrepare_Defaults(t *testing.T) {
 		t.Error("expected elevated_password to be empty")
 	}
 
-	if p.config.ExecuteCommand != `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};{{.Vars}}&'{{.Path}}';exit $LastExitCode` {
-		t.Fatalf(`Default command should be "if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};{{.Vars}}&'{{.Path}}';exit $LastExitCode", but got %s`, p.config.ExecuteCommand)
+	if p.config.ExecuteCommand != `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"` {
+		t.Fatalf(`Default command should be 'powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"', but got %s`, p.config.ExecuteCommand)
 	}
 
-	if p.config.ElevatedExecuteCommand != `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};{{.Vars}}&'{{.Path}}';exit $LastExitCode` {
-		t.Fatalf(`Default command should be "if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};{{.Vars}}&'{{.Path}}';exit $LastExitCode", but got %s`, p.config.ElevatedExecuteCommand)
+	if p.config.ElevatedExecuteCommand != `{{.Vars}}{{.Path}}; exit $LastExitCode` {
+		t.Fatalf(`Default command should be "{{.Vars}}{{.Path}}; exit $LastExitCode", but got %s`, p.config.ElevatedExecuteCommand)
 	}
 
 	if p.config.ValidExitCodes == nil {
@@ -95,8 +95,8 @@ func TestProvisionerPrepare_Defaults(t *testing.T) {
 		}
 	}
 
-	if p.config.ElevatedEnvVarFormat != `$env:%s="%s"; ` {
-		t.Fatalf(`Default command should be powershell '$env:%%s="%%s"; ', but got %s`, p.config.ElevatedEnvVarFormat)
+	if p.config.ElevatedEnvVarFormat != `$env:%s=\"%s\"; ` {
+		t.Fatalf(`Default command should be powershell '$env:%%s=\"%%s\"; ', but got %s`, p.config.ElevatedEnvVarFormat)
 	}
 }
 
@@ -423,23 +423,9 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};$env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; &'c:/Windows/Temp/inlineScript.ps1';exit $LastExitCode`
-	expectedCommandBase64Encoded := `aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgAHYAYQByAGkAYQBiAGwAZQA6AGcAbABvAGIAYQBsADoAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAKQB7ACQAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAPQAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwB9ADsAJABlAG4AdgA6AFAAQQBDAEsARQBSAF8AQgBVAEkATABEAEUAUgBfAFQAWQBQAEUAPQAiAGkAcwBvACIAOwAgACQAZQBuAHYAOgBQAEEAQwBLAEUAUgBfAEIAVQBJAEwARABfAE4AQQBNAEUAPQAiAHYAbQB3AGEAcgBlACIAOwAgACYAJwBjADoALwBXAGkAbgBkAG8AdwBzAC8AVABlAG0AcAAvAGkAbgBsAGkAbgBlAFMAYwByAGkAcAB0AC4AcABzADEAJwA7AGUAeABpAHQAIAAkAEwAYQBzAHQARQB4AGkAdABDAG8AZABlAA==`
-	expectedCommandPrefix := `powershell -executionpolicy bypass -encodedCommand `
-	expectedCommandEncoded := expectedCommandPrefix + expectedCommandBase64Encoded
-
-	actualCommandWithoutPrefix := strings.Replace(comm.StartCmd.Command, expectedCommandPrefix, "", -1)
-	actualCommandDecoded, err := powershellDecode(actualCommandWithoutPrefix)
-	if err != nil {
-		t.Fatal("should not have error when base64 decoding")
-	}
-
-	if actualCommandDecoded != expectedCommand {
-		t.Fatalf("Expected decoded: %s, got %s", expectedCommand, actualCommandDecoded)
-	}
-
-	if comm.StartCmd.Command != expectedCommandEncoded {
-		t.Fatalf("Expect command to be: %s, got %s", expectedCommandEncoded, comm.StartCmd.Command)
+	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
+	if comm.StartCmd.Command != expectedCommand {
+		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
 
 	envVars := make([]string, 2)
@@ -454,23 +440,9 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand = `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};$env:BAR="BAZ"; $env:FOO="BAR"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; &'c:/Windows/Temp/inlineScript.ps1';exit $LastExitCode`
-	expectedCommandBase64Encoded = `aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgAHYAYQByAGkAYQBiAGwAZQA6AGcAbABvAGIAYQBsADoAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAKQB7ACQAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAPQAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwB9ADsAJABlAG4AdgA6AEIAQQBSAD0AIgBCAEEAWgAiADsAIAAkAGUAbgB2ADoARgBPAE8APQAiAEIAQQBSACIAOwAgACQAZQBuAHYAOgBQAEEAQwBLAEUAUgBfAEIAVQBJAEwARABFAFIAXwBUAFkAUABFAD0AIgBpAHMAbwAiADsAIAAkAGUAbgB2ADoAUABBAEMASwBFAFIAXwBCAFUASQBMAEQAXwBOAEEATQBFAD0AIgB2AG0AdwBhAHIAZQAiADsAIAAmACcAYwA6AC8AVwBpAG4AZABvAHcAcwAvAFQAZQBtAHAALwBpAG4AbABpAG4AZQBTAGMAcgBpAHAAdAAuAHAAcwAxACcAOwBlAHgAaQB0ACAAJABMAGEAcwB0AEUAeABpAHQAQwBvAGQAZQA=`
-	expectedCommandPrefix = `powershell -executionpolicy bypass -encodedCommand `
-	expectedCommandEncoded = expectedCommandPrefix + expectedCommandBase64Encoded
-
-	actualCommandWithoutPrefix = strings.Replace(comm.StartCmd.Command, expectedCommandPrefix, "", -1)
-	actualCommandDecoded, err = powershellDecode(actualCommandWithoutPrefix)
-	if err != nil {
-		t.Fatal("should not have error when base64 decoding")
-	}
-
-	if actualCommandDecoded != expectedCommand {
-		t.Fatalf("Expected decoded: %s, got %s", expectedCommand, actualCommandDecoded)
-	}
-
-	if comm.StartCmd.Command != expectedCommandEncoded {
-		t.Fatalf("Expect command to be: %s, got %s", expectedCommandEncoded, comm.StartCmd.Command)
+	expectedCommand = `powershell "& { $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
+	if comm.StartCmd.Command != expectedCommand {
+		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
 }
 
@@ -492,24 +464,11 @@ func TestProvisionerProvision_Scripts(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};$env:PACKER_BUILDER_TYPE="footype"; $env:PACKER_BUILD_NAME="foobuild"; &'c:/Windows/Temp/script.ps1';exit $LastExitCode`
-	expectedCommandBase64Encoded := `aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgAHYAYQByAGkAYQBiAGwAZQA6AGcAbABvAGIAYQBsADoAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAKQB7ACQAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAPQAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwB9ADsAJABlAG4AdgA6AFAAQQBDAEsARQBSAF8AQgBVAEkATABEAEUAUgBfAFQAWQBQAEUAPQAiAGYAbwBvAHQAeQBwAGUAIgA7ACAAJABlAG4AdgA6AFAAQQBDAEsARQBSAF8AQgBVAEkATABEAF8ATgBBAE0ARQA9ACIAZgBvAG8AYgB1AGkAbABkACIAOwAgACYAJwBjADoALwBXAGkAbgBkAG8AdwBzAC8AVABlAG0AcAAvAHMAYwByAGkAcAB0AC4AcABzADEAJwA7AGUAeABpAHQAIAAkAEwAYQBzAHQARQB4AGkAdABDAG8AZABlAA==`
-	expectedCommandPrefix := `powershell -executionpolicy bypass -encodedCommand `
-	expectedCommandEncoded := expectedCommandPrefix + expectedCommandBase64Encoded
-
-	actualCommandWithoutPrefix := strings.Replace(comm.StartCmd.Command, expectedCommandPrefix, "", -1)
-	actualCommandDecoded, err := powershellDecode(actualCommandWithoutPrefix)
-	if err != nil {
-		t.Fatal("should not have error when base64 decoding")
+	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
+	if comm.StartCmd.Command != expectedCommand {
+		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
 
-	if actualCommandDecoded != expectedCommand {
-		t.Fatalf("Expected decoded: %s, got %s", expectedCommand, actualCommandDecoded)
-	}
-
-	if comm.StartCmd.Command != expectedCommandEncoded {
-		t.Fatalf("Expect command to be: %s, got %s", expectedCommandEncoded, comm.StartCmd.Command)
-	}
 }
 
 func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
@@ -537,23 +496,9 @@ func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};$env:BAR="BAZ"; $env:FOO="BAR"; $env:PACKER_BUILDER_TYPE="footype"; $env:PACKER_BUILD_NAME="foobuild"; &'c:/Windows/Temp/script.ps1';exit $LastExitCode`
-	expectedCommandBase64Encoded := `aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgAHYAYQByAGkAYQBiAGwAZQA6AGcAbABvAGIAYQBsADoAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAKQB7ACQAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAPQAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwB9ADsAJABlAG4AdgA6AEIAQQBSAD0AIgBCAEEAWgAiADsAIAAkAGUAbgB2ADoARgBPAE8APQAiAEIAQQBSACIAOwAgACQAZQBuAHYAOgBQAEEAQwBLAEUAUgBfAEIAVQBJAEwARABFAFIAXwBUAFkAUABFAD0AIgBmAG8AbwB0AHkAcABlACIAOwAgACQAZQBuAHYAOgBQAEEAQwBLAEUAUgBfAEIAVQBJAEwARABfAE4AQQBNAEUAPQAiAGYAbwBvAGIAdQBpAGwAZAAiADsAIAAmACcAYwA6AC8AVwBpAG4AZABvAHcAcwAvAFQAZQBtAHAALwBzAGMAcgBpAHAAdAAuAHAAcwAxACcAOwBlAHgAaQB0ACAAJABMAGEAcwB0AEUAeABpAHQAQwBvAGQAZQA=`
-	expectedCommandPrefix := `powershell -executionpolicy bypass -encodedCommand `
-	expectedCommandEncoded := expectedCommandPrefix + expectedCommandBase64Encoded
-
-	actualCommandWithoutPrefix := strings.Replace(comm.StartCmd.Command, expectedCommandPrefix, "", -1)
-	actualCommandDecoded, err := powershellDecode(actualCommandWithoutPrefix)
-	if err != nil {
-		t.Fatal("should not have error when base64 decoding")
-	}
-
-	if actualCommandDecoded != expectedCommand {
-		t.Fatalf("Expected decoded: %s, got %s", expectedCommand, actualCommandDecoded)
-	}
-
-	if comm.StartCmd.Command != expectedCommandEncoded {
-		t.Fatalf("Expect command to be: %s, got %s", expectedCommandEncoded, comm.StartCmd.Command)
+	expectedCommand := `powershell "& { $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
+	if comm.StartCmd.Command != expectedCommand {
+		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
 }
 
@@ -581,7 +526,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -592,7 +537,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:FOO=\"bar\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -603,7 +548,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:BAZ=\"qux\"; $env:FOO=\"bar\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -613,7 +558,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:FOO="bar=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:FOO=\"bar=baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -623,7 +568,7 @@ func TestProvisioner_createFlattenedElevatedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:FOO="=baz"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:FOO=\"=baz\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -647,7 +592,7 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -658,7 +603,7 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:FOO=\"bar\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 
@@ -669,7 +614,7 @@ func TestProvisioner_createFlattenedEnvVars_windows(t *testing.T) {
 	if err != nil {
 		t.Fatalf("should not have error creating flattened env vars: %s", err)
 	}
-	if flattenedEnvVars != `$env:BAZ="qux"; $env:FOO="bar"; $env:PACKER_BUILDER_TYPE="iso"; $env:PACKER_BUILD_NAME="vmware"; ` {
+	if flattenedEnvVars != `$env:BAZ=\"qux\"; $env:FOO=\"bar\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; ` {
 		t.Fatalf("unexpected flattened env vars: %s", flattenedEnvVars)
 	}
 }
@@ -682,34 +627,24 @@ func TestProvision_createCommandText(t *testing.T) {
 	p.communicator = comm
 	_ = p.Prepare(config)
 
+	// Defaults provided by Packer
+	p.config.PackerBuildName = "vmware"
+	p.config.PackerBuilderType = "iso"
+
 	// Non-elevated
 	cmd, _ := p.createCommandText()
 
-	expectedCommand := `if (Test-Path variable:global:ProgressPreference){$ProgressPreference='SilentlyContinue'};$env:PACKER_BUILDER_TYPE=""; $env:PACKER_BUILD_NAME=""; &'c:/Windows/Temp/script.ps1';exit $LastExitCode`
-	expectedCommandBase64Encoded := `aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgAHYAYQByAGkAYQBiAGwAZQA6AGcAbABvAGIAYQBsADoAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAKQB7ACQAUAByAG8AZwByAGUAcwBzAFAAcgBlAGYAZQByAGUAbgBjAGUAPQAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwB9ADsAJABlAG4AdgA6AFAAQQBDAEsARQBSAF8AQgBVAEkATABEAEUAUgBfAFQAWQBQAEUAPQAiACIAOwAgACQAZQBuAHYAOgBQAEEAQwBLAEUAUgBfAEIAVQBJAEwARABfAE4AQQBNAEUAPQAiACIAOwAgACYAJwBjADoALwBXAGkAbgBkAG8AdwBzAC8AVABlAG0AcAAvAHMAYwByAGkAcAB0AC4AcABzADEAJwA7AGUAeABpAHQAIAAkAEwAYQBzAHQARQB4AGkAdABDAG8AZABlAA==`
-	expectedCommandPrefix := `powershell -executionpolicy bypass -encodedCommand `
-	expectedCommandEncoded := expectedCommandPrefix + expectedCommandBase64Encoded
+	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
 
-	actualCommandWithoutPrefix := strings.Replace(cmd, expectedCommandPrefix, "", -1)
-
-	actualCommandDecoded, err := powershellDecode(actualCommandWithoutPrefix)
-	if err != nil {
-		t.Fatal("should not have error when base64 decoding")
-	}
-
-	if actualCommandDecoded != expectedCommand {
-		t.Fatalf("Expected decoded: %s, got %s", expectedCommand, actualCommandDecoded)
-	}
-
-	if cmd != expectedCommandEncoded {
-		t.Fatalf("Expect command to be: %s, got %s", expectedCommandEncoded, cmd)
+	if cmd != expectedCommand {
+		t.Fatalf("Expected Non-elevated command: %s, got %s", expectedCommand, cmd)
 	}
 
 	// Elevated
 	p.config.ElevatedUser = "vagrant"
 	p.config.ElevatedPassword = "vagrant"
 	cmd, _ = p.createCommandText()
-	matched, _ := regexp.MatchString("powershell -executionpolicy bypass -file \"%TEMP%(.{1})packer-elevated-shell.*", cmd)
+	matched, _ := regexp.MatchString(`powershell "& { %TEMP%(.{1})packer-elevated-shell.* }"`, cmd)
 	if !matched {
 		t.Fatalf("Got unexpected elevated command: %s", cmd)
 	}
