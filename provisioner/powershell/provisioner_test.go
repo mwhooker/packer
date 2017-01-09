@@ -75,12 +75,12 @@ func TestProvisionerPrepare_Defaults(t *testing.T) {
 		t.Error("expected elevated_password to be empty")
 	}
 
-	if p.config.ExecuteCommand != `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"` {
-		t.Fatalf(`Default command should be 'powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"', but got %s`, p.config.ExecuteCommand)
+	if p.config.ExecuteCommand != `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"` {
+		t.Fatalf(`Default command should be 'powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"', but got '%s'`, p.config.ExecuteCommand)
 	}
 
-	if p.config.ElevatedExecuteCommand != `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"` {
-		t.Fatalf(`Default command should be 'powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"', but got %s`, p.config.ElevatedExecuteCommand)
+	if p.config.ElevatedExecuteCommand != `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"` {
+		t.Fatalf(`Default command should be 'powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"', but got '%s'`, p.config.ElevatedExecuteCommand)
 	}
 
 	if p.config.ValidExitCodes == nil {
@@ -423,7 +423,7 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
+	expectedCommand := `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
 	if comm.StartCmd.Command != expectedCommand {
 		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
@@ -440,7 +440,7 @@ func TestProvisionerProvision_Inline(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand = `powershell "& { $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
+	expectedCommand = `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/inlineScript.ps1; exit $LastExitCode }"`
 	if comm.StartCmd.Command != expectedCommand {
 		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
@@ -464,7 +464,7 @@ func TestProvisionerProvision_Scripts(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
+	expectedCommand := `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
 	if comm.StartCmd.Command != expectedCommand {
 		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
@@ -496,7 +496,7 @@ func TestProvisionerProvision_ScriptsWithEnvVars(t *testing.T) {
 		t.Fatal("should not have error")
 	}
 
-	expectedCommand := `powershell "& { $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
+	expectedCommand := `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; $env:BAR=\"BAZ\"; $env:FOO=\"BAR\"; $env:PACKER_BUILDER_TYPE=\"footype\"; $env:PACKER_BUILD_NAME=\"foobuild\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
 	if comm.StartCmd.Command != expectedCommand {
 		t.Fatalf("Expect command to be: %s, got %s", expectedCommand, comm.StartCmd.Command)
 	}
@@ -634,7 +634,7 @@ func TestProvision_createCommandText(t *testing.T) {
 	// Non-elevated
 	cmd, _ := p.createCommandText()
 
-	expectedCommand := `powershell "& { $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
+	expectedCommand := `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; $env:PACKER_BUILDER_TYPE=\"iso\"; $env:PACKER_BUILD_NAME=\"vmware\"; c:/Windows/Temp/script.ps1; exit $LastExitCode }"`
 
 	if cmd != expectedCommand {
 		t.Fatalf("Expected Non-elevated command: %s, got %s", expectedCommand, cmd)
