@@ -122,11 +122,11 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 	}
 
 	if p.config.ExecuteCommand == "" {
-		p.config.ExecuteCommand = `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"`
+		p.config.ExecuteCommand = `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"`
 	}
 
 	if p.config.ElevatedExecuteCommand == "" {
-		p.config.ElevatedExecuteCommand = `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode }"`
+		p.config.ElevatedExecuteCommand = `powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"`
 	}
 
 	if p.config.Inline != nil && len(p.config.Inline) == 0 {
