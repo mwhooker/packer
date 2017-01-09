@@ -60,11 +60,21 @@ Optional parameters:
     as well, which are covered in the section below.
 
 -   `execute_command` (string) - The command to use to execute the script. By
-    default this is `powershell "& { {{.Vars}}{{.Path}}; exit $LastExitCode}"`.
+    default the command used is as follows:
+
+    ``` {.javascript}
+    powershell "& { if (Test-Path variable:global:ProgressPreference){$ProgressPreference=\"SilentlyContinue\"}; {{.Vars}}{{.Path}}; exit $LastExitCode }"
+    ```
+
     The value of this is treated as [configuration
     template](/docs/templates/configuration-templates.html). There are two
     available variables: `Path`, which is the path to the script to run, and
     `Vars`, which is the list of `environment_vars`, if configured.
+
+    The `ProgressPreference` variable is set to `SilentlyContinue` to
+    avoid unwanted output on the console from [Powershells Progress
+    stream](http://social.technet.microsoft.com/wiki/contents/articles/13726.powershell-inputoutput-streams-concepts.aspx).
+    This is a known issue affecting some versions of Windows/Powershell.
 
 -   `elevated_user` and `elevated_password` (string) - If specified, the
     PowerShell script will be run with elevated privileges using the given
